@@ -1,0 +1,74 @@
+using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody))]
+public class MantaRayController : MonoBehaviour
+{
+    [Header("Configurações de Movimento")]
+    public float forcaImpulso = 50f;
+    public float velocidadeRotacao = 30f;
+    public float forcaFlutuabilidade = 2f;
+    
+    [Header("Limites do Rio")]
+    public float profundidadeMaxima = 50f;
+    public float nivelDaAgua = 0f;
+
+    private Rigidbody rb;
+    private float inputVertical;
+    private float inputHorizontal;
+    private float inputProfundidade;
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.useGravity = false; // A gravidade será controlada pela flutuabilidade
+        rb.linearDamping = 2f; // Resistencia da água ao movimento
+        rb.angularDamping = 2f; // Resistencia da água à rotação
+    }
+
+    void Update()
+    {
+        // Captura os inputs do jogador (WASD ou Setas)
+        inputVertical = Input.GetAxis("Vertical"); // Frente e trás
+        inputHorizontal = Input.GetAxis("Horizontal"); // Rotação Esquerda e Direita
+        
+        // Controle de mergulho/subida (Teclas Q e E, por exemplo, configuradas no Input Manager)
+        inputProfundidade = 0f;
+        if (Input.GetKey(KeyCode.Space)) inputProfundidade = 1f; // Subir
+        if (Input.GetKey(KeyCode.LeftControl)) inputProfundidade = -1f; // Descer
+    }
+
+    void FixedUpdate()
+    {
+        MoverDrone();
+        AplicarFlutuabilidade();
+    }
+
+    private void MoverDrone()
+    {
+        // Movimento para frente e para trás
+        Vector3 forcaFrente = transform.forward * inputVertical * forcaImpulso;
+        
+        // Movimento de subida e descida (Mergulho)
+        Vector3 forcaCima = transform.up * inputProfundidade * (forcaImpulso * 0.7f);
+        
+        rb.AddForce(forcaFrente + forcaCima, ForceMode.Acceleration);
+
+        // Rotação (Guinada / Yaw)
+        Vector3 torqueRotacao = Vector3.up * inputHorizontal * velocidadeRotacao;
+        rb.AddTorque(torqueRotacao, ForceMode.Acceleration);
+    }
+
+    private void AplicarFlutuabilidade()
+    {
+        // Simula a tendência do drone de estabilizar ou flutuar levemente
+        if (transform.position.y < nivelDaAgua)
+        {
+            rb.AddForce(Vector3.up * forcaFlutuabilidade, ForceMode.Acceleration);
+        }
+        else
+        {
+            // Se sair da água, a gravidade age forte
+            rb.AddForce(Vector3.down * 9.81f, ForceMode.Acceleration);
+        }
+    }
+}
